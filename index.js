@@ -45,6 +45,61 @@ app.post('/books', (req, res) => {
   res.send('Book created successfully')
 })
 
+// PUT untuk mengupdate buku berdasarkan ID
+app.put('/books/:id', (req, res) => {
+  // Mendapatkan ID buku yang akan diupdate dari parameter URL
+  // Lalu mengubahnya menjadi tipe data integer menggunakan parseInt
+  const id = parseInt(req.params.id)
+
+  // Mendapatkan data buku yang akan diupdate dari request body
+  const { title, author, year } = req.body
+
+  // Mencari buku dengan ID yang sesuai
+  const bookIndex = books.findIndex((book) => book.id === id)
+
+  // Jika buku tidak ditemukan, kirimkan pesan error
+  if (bookIndex === -1) {
+    res.send(`Book with ID: ${id} not found`)
+    return
+  }
+
+  // Mengupdate data buku dengan menggunakan spread operator
+  books[bookIndex] = {
+    id: books[bookIndex].id,
+    title,
+    author,
+    year,
+  }
+
+  res.send(`Book with ID: ${id} updated successfully`)
+})
+
+// DELETE untuk menghapus buku berdasarkan ID
+app.delete('/books/:id', (req, res) => {
+  // Mendapatkan ID buku yang akan diupdate dari parameter URL
+  // Lalu mengubahnya menjadi tipe data integer menggunakan parseInt
+  const id = parseInt(req.params.id)
+
+  // Mencari index buku dengan ID yang sesuai
+  const bookIndex = books.findIndex((book) => book.id === id)
+
+  // Jika buku tidak ditemukan, kirimkan pesan error
+  if (bookIndex === -1) {
+    res.send(`Book with ID: ${id} not found`)
+    return
+  }
+
+  // Menghapus buku dari array menggunakan splice
+  books.splice(bookIndex, 1)
+
+  res.send(`Book with ID: ${id} deleted successfully`)
+})
+
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
+
+
 app.listen(port, () => {
 	console.log(`Example app listening on port ${port}`)
 })
