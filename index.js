@@ -1,5 +1,5 @@
 import express from 'express'
-import { books } from './data.js' // Import data buku
+import { users } from './data.js' // Import data buku
 
 
 const app = express()
@@ -8,45 +8,45 @@ const port = 3000
 app.use(express.json()) // Middleware untuk parsing JSON pada request body
 
 app.get('/', (req, res) => {
-	res.send(books)
+	res.send(users)
 })
 
 // GET buku berdasarkan ID
-app.get('/books/:id', (req, res) => {
+app.get('/user/:id', (req, res) => {
   // Mendapatkan ID buku yang akan diupdate dari parameter URL
   // Lalu mengubahnya menjadi tipe data integer menggunakan parseInt
   const id = parseInt(req.params.id)
 
   // Mencari buku dengan ID yang sesuai
-  const book = books.find((book) => book.id === id)
+  const user = users.find((user) => user.id === id)
 
   // Jika buku tidak ditemukan, kirimkan pesan error
-  if (!book) {
-    res.send(`Book with ID: ${id} not found`)
+  if (!user) {
+    res.send(`user with ID: ${id} not found`)
   }
 
-  res.send(book)
+  res.send(user)
 })
 
 // POST untuk menambahkan buku baru
-app.post('/books', (req, res) => {
+app.post('/user', (req, res) => {
   // Mendapatkan data buku baru dari request body
   const { title, author, year } = req.body
 
-  // Membuat ID baru dengan menambahkan 1 pada ID terakhir di array books
-  const newId = books.length + 1
+  // Membuat ID baru dengan menambahkan 1 pada ID terakhir di array users
+  const newId = users.length + 1
 
   // Membuat objek buku baru dengan ID yang unik
-  const newBook = { id: newId, title, author, year }
+  const newuser = { id: newId, title, author, year }
 
-  // Menambahkan buku baru ke dalam array books
-  books.push(newBook)
+  // Menambahkan buku baru ke dalam array users
+  users.push(newuser)
 
-  res.send('Book created successfully')
+  res.send('user created successfully')
 })
 
 // PUT untuk mengupdate buku berdasarkan ID
-app.put('/books/:id', (req, res) => {
+app.put('/user/:id', (req, res) => {
   // Mendapatkan ID buku yang akan diupdate dari parameter URL
   // Lalu mengubahnya menjadi tipe data integer menggunakan parseInt
   const id = parseInt(req.params.id)
@@ -55,44 +55,44 @@ app.put('/books/:id', (req, res) => {
   const { title, author, year } = req.body
 
   // Mencari buku dengan ID yang sesuai
-  const bookIndex = books.findIndex((book) => book.id === id)
+  const userIndex = users.findIndex((user) => user.id === id)
 
   // Jika buku tidak ditemukan, kirimkan pesan error
-  if (bookIndex === -1) {
-    res.send(`Book with ID: ${id} not found`)
+  if (userIndex === -1) {
+    res.send(`user with ID: ${id} not found`)
     return
   }
 
   // Mengupdate data buku dengan menggunakan spread operator
-  books[bookIndex] = {
-    id: books[bookIndex].id,
+  users[userIndex] = {
+    id: users[userIndex].id,
     title,
     author,
     year,
   }
 
-  res.send(`Book with ID: ${id} updated successfully`)
+  res.send(`user with ID: ${id} updated successfully`)
 })
 
 // DELETE untuk menghapus buku berdasarkan ID
-app.delete('/books/:id', (req, res) => {
+app.delete('/user/:id', (req, res) => {
   // Mendapatkan ID buku yang akan diupdate dari parameter URL
   // Lalu mengubahnya menjadi tipe data integer menggunakan parseInt
   const id = parseInt(req.params.id)
 
   // Mencari index buku dengan ID yang sesuai
-  const bookIndex = books.findIndex((book) => book.id === id)
+  const userIndex = users.findIndex((user) => user.id === id)
 
   // Jika buku tidak ditemukan, kirimkan pesan error
-  if (bookIndex === -1) {
-    res.send(`Book with ID: ${id} not found`)
+  if (userIndex === -1) {
+    res.send(`user with ID: ${id} not found`)
     return
   }
 
   // Menghapus buku dari array menggunakan splice
-  books.splice(bookIndex, 1)
+  users.splice(userIndex, 1)
 
-  res.send(`Book with ID: ${id} deleted successfully`)
+  res.send(`user with ID: ${id} deleted successfully`)
 })
 
 app.listen(port, () => {
