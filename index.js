@@ -55,8 +55,6 @@ app.get('/books/:id', async (req, res) => {
     "message": "Book retrieved successfully",
     "data": book
   })
-
-  res.send(book)
 })
 
 // Menambahkan buku baru
@@ -78,8 +76,6 @@ app.post('/books', async (req, res) => {
     "message": "Book created successfully",
     "data": book
   })
-
-  res.send('Book created successfully')
 })
 
 // Update buku berdasarkan ID
