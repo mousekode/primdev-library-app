@@ -1,6 +1,4 @@
 import express from 'express'
-import { users } from './data.js' // Import data buku
-import { books } from './data.js'
 import prisma from './database.js' // Import Prisma Client dari file database.js
 
 
@@ -10,7 +8,7 @@ const port = 3000
 app.use(express.json()) // Middleware untuk parsing JSON pada request body
 
 app.get('/', (req, res) => {
-  res.send(users)
+  res.send("Start searching.")
 })
 
 // Book CRUD
@@ -19,8 +17,6 @@ app.get('/', (req, res) => {
 app.get('/books', async (req, res) => {
   // Mengambil semua buku dari database menggunakan Prisma Client
   const books = await prisma.books.findMany()
-  
-  res.send(books)
   
   res.json({
     "success": true,
@@ -156,74 +152,94 @@ app.delete('/books/:id', async (req, res) => {
 
 // User CRUD
 
+// GET semua user
+app.get('/user', async (req, res) => {
+  const users = await prisma.users.findMany();
+  res.json({
+    "success": true,
+    "message": "Users retrieved successfully",
+    "data": users
+  });
+});
+
 // GET user berdasarkan ID
-app.get('/user/:id', (req, res) => {
-  const id = parseInt(req.params.id)
-  const user = users.find((user) => user.id === id)
+app.get('/user/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  const user = await prisma.users.findUnique({
+    where: { id: id }
+  });
   if (!user) {
     return res.json({
       "success": false,
       "message": `User with ID: ${id} not found`
-    })
+    });
   }
   res.json({
     "success": true,
     "data": user
-  })
-})
+  });
+});
 
 // POST untuk menambahkan user baru
-app.post('/user', (req, res) => {
-  const { title, author, year } = req.body
-  const newId = users.length + 1
-  const newuser = { id: newId, title, author, year }
-  users.push(newuser)
+app.post('/user', async (req, res) => {
+  const { name, email } = req.body;
+  const user = await prisma.users.create({
+    data: {
+      name,
+      email
+    }
+  });
   res.json({
     "success": true,
     "message": "User created successfully",
-    "data": newuser
-  })
-})
+    "data": user
+  });
+});
 
 // PUT untuk mengupdate user berdasarkan ID
-app.put('/user/:id', (req, res) => {
-  const id = parseInt(req.params.id)
-  const { title, author, year } = req.body
-  const userIndex = users.findIndex((user) => user.id === id)
-  if (userIndex === -1) {
+app.put('/user/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { name, email } = req.body;
+  const user = await prisma.users.findUnique({
+    where: { id: id }
+  });
+  if (!user) {
     return res.json({
       "success": false,
       "message": `User with ID: ${id} not found`
-    })
+    });
   }
-  users[userIndex] = {
-    id: users[userIndex].id,
-    title,
-    author,
-    year,
-  }
+  const updatedUser = await prisma.users.update({
+    where: { id: id },
+    data: { name, email }
+  });
   res.json({
     "success": true,
     "message": "User updated successfully",
-    "data": users[userIndex]
-  })
-})
+    "data": updatedUser
+  });
+});
 
 // DELETE untuk menghapus user berdasarkan ID
-app.delete('/user/:id', (req, res) => {
-  const id = parseInt(req.params.id)
-  const userIndex = users.findIndex((user) => user.id === id)
-  if (userIndex === -1) {
-    res.send(`user with ID: ${id} not found`)
-    return
+app.delete('/user/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  const user = await prisma.users.findUnique({
+    where: { id: id }
+  });
+  if (!user) {
+    return res.json({
+      "success": false,
+      "message": `User with ID: ${id} not found`
+    });
   }
-  users.splice(userIndex, 1)
+  await prisma.users.delete({
+    where: { id: id }
+  });
   res.json({
     "success": true,
-    "message": "User deleted successfully",
-    "data": users[userIndex]
-  })
-})
+    "message": "User deleted successfully"
+  });
+});
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
