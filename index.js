@@ -1,5 +1,7 @@
 import express from 'express'
 import { users } from './data.js' // Import data buku
+import { books } from './data.js'
+import prisma from './database.js' // Import Prisma Client dari file database.js
 
 
 const app = express()

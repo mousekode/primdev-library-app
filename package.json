@@ -1,6 +1,9 @@
 {
   "dependencies": {
-    "express": "^5.2.1"
+    "@prisma/adapter-pg": "^7.5.0",
+    "@prisma/client": "^6.19.2",
+    "express": "^5.2.1",
+    "pg": "^8.20.0"
   },
   "name": "primdev-ic-be",
   "version": "1.0.0",
@@ -12,5 +15,9 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Akbar Aditya",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "dotenv": "^17.3.1",
+    "prisma": "^6.19.2"
+  }
 }

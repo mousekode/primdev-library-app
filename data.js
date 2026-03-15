@@ -21,3 +21,26 @@ export const users =
   { "id": 19, "name": "Rendra Karno", "email": "rendra.karno@example.com", "role": "USER" },
   { "id": 20, "name": "Siska Amelia", "email": "siska.amelia@example.com", "role": "USER" }
 ]
+
+export const books = [
+  { "id": 1, "title": "Laskar Pelangi", "author": "Andrea Hirata", "year": 2005 },
+  { "id": 2, "title": "Bumi Manusia", "author": "Pramoedya Ananta Toer", "year": 1980 },
+  { "id": 3, "title": "Cantik Itu Luka", "author": "Eka Kurniawan", "year": 2002 },
+  { "id": 4, "title": "Perahu Kertas", "author": "Dee Lestari", "year": 2009 },
+  { "id": 5, "title": "Negeri 5 Menara", "author": "Ahmad Fuadi", "year": 2009 },
+  { "id": 6, "title": "Pulang", "author": "Leila S. Chudori", "year": 2012 },
+  { "id": 7, "title": "Ronggeng Dukuh Paruk", "author": "Ahmad Tohari", "year": 1982 },
+  { "id": 8, "title": "Hafalan Shalat Delisa", "author": "Tere Liye", "year": 2005 },
+  { "id": 9, "title": "Tenggelamnya Kapal Van der Wijck", "author": "Hamka", "year": 1938 },
+  { "id": 10, "title": "Gadis Kretek", "author": "Ratih Kumala", "year": 2012 },
+  { "id": 11, "title": "Saman", "author": "Ayu Utami", "year": 1998 },
+  { "id": 12, "title": "5 cm", "author": "Donny Dhirgantoro", "year": 2005 },
+  { "id": 13, "title": "Dilan: Dia adalah Dilanku Tahun 1990", "author": "Pidi Baiq", "year": 2014 },
+  { "id": 14, "title": "Supernova: Ksatria, Puteri, dan Bintang Jatuh", "author": "Dee Lestari", "year": 2001 },
+  { "id": 15, "title": "Orang-Orang Biasa", "author": "Andrea Hirata", "year": 2019 },
+  { "id": 16, "title": "Anak Semua Bangsa", "author": "Pramoedya Ananta Toer", "year": 1981 },
+  { "id": 17, "title": "Sang Pemimpi", "author": "Andrea Hirata", "year": 2006 },
+  { "id": 18, "title": "Hujan", "author": "Tere Liye", "year": 2016 },
+  { "id": 19, "title": "Lelaki Harimau", "author": "Eka Kurniawan", "year": 2004 },
+  { "id": 20, "title": "Garis Waktu", "author": "Fiersa Besari", "year": 2016 }
+];
