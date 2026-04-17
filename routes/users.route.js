@@ -1,18 +1,20 @@
 import express from 'express'
-
 import {
-  getAllUsers,
-  getUserById,
   createUser,
-  updateUser,
   deleteUser,
-} from '../controllers/users.controller.js' // Import controller untuk user
+  getUserById,
+  getUserByIdWithProfile, // import controller-nya
+  getUsers,
+  updateUser,
+} from '../controllers/users.controller.js'
 
 const router = express.Router()
-router.get('/', getAllUsers)
+
+router.get('/', getUsers)
 router.get('/:id', getUserById)
+router.get('/:id/profile', getUserByIdWithProfile) // buat route-nya
 router.post('/', createUser)
 router.put('/:id', updateUser)
-router.delete('/:id', deleteUser)
+router.delete('/users/:id', deleteUser)
 
 export default router

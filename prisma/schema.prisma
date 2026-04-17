@@ -15,20 +15,56 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model Users {
+model Profiles {
   id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  password  String   @db.VarChar(255)
-  role      String   @default("USER")
+  userId    Int      @unique
+  address   String?
+  phone     String?
   createdAt DateTime @default(now())
+  
+  user Users @relation(fields: [userId], references: [id])
 }
 
-model Books {
+model Categories {
   id        Int      @id @default(autoincrement())
-  title     String
-  author    String
-  year      Int
-  available Boolean  @default(true)
+  name      String
   createdAt DateTime @default(now())
+  
+  books Books[]
+}
+
+model Users {
+  id         Int          @id @default(autoincrement())
+  name       String
+  email      String       @unique
+  password   String       @db.VarChar(255)
+  role       String       @default("USER")
+  createdAt  DateTime     @default(now())
+  profiles   Profiles?
+  borrowings Borrowings[] // tambahkan ini
+}
+
+
+model Books {
+  id         Int          @id @default(autoincrement())
+  categoryId Int?
+  title      String
+  author     String
+  year       Int
+  available  Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  categories Categories?  @relation(fields: [categoryId], references: [id])
+  borrowings Borrowings[] // tambahkan ini
+}
+
+// Pivot Table for Many-to-Many relationship between Users and Books
+model Borrowings {
+  id          Int       @id @default(autoincrement())
+  userId      Int
+  bookId      Int
+  borrow_date DateTime  @default(now())
+  returned_at DateTime?
+  createdAt   DateTime  @default(now())
+  borrower    Users     @relation(fields: [userId], references: [id])
+  book        Books     @relation(fields: [bookId], references: [id])
 }

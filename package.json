@@ -17,6 +17,7 @@
   "author": "Akbar Aditya",
   "license": "ISC",
   "devDependencies": {
+    "@faker-js/faker": "^10.4.0",
     "dotenv": "^17.3.1",
     "prisma": "^6.19.2"
   }
