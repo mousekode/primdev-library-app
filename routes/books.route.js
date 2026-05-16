@@ -8,12 +8,24 @@ import {
   deleteBook,
 } from '../controllers/books.controller.js' // Import controller untuk buku
 
+import {
+  bookValidation,
+  updateBookValidation,
+} from '../validations/books.validation.js' // Import validasi untuk buku
+
+import multer from 'multer'
+
+const storage = multer.memoryStorage()
+const upload = multer({ storage })
+
 const router = express.Router()
+
+import { authorizeAdmin } from '../middlewares/auth.middleware.js' // Import middleware untuk otorisasi admin
 
 router.get('/', getBooks)
 router.get('/:id', getBookById)
-router.post('/', createBook)
-router.put('/:id', updateBook)
-router.delete('/:id', deleteBook)
+router.post('/', authorizeAdmin, upload.single('cover'), bookValidation, createBook)
+router.put('/:id', authorizeAdmin, upload.single('cover'), updateBookValidation, updateBook)
+router.delete('/:id', authorizeAdmin, deleteBook)
 
 export default router

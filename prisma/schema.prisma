@@ -52,9 +52,10 @@ model Books {
   author     String
   year       Int
   available  Boolean      @default(true)
+  cloudinaryId String? 
   createdAt  DateTime     @default(now())
   categories Categories?  @relation(fields: [categoryId], references: [id])
-  borrowings Borrowings[] // tambahkan ini
+  borrowings Borrowings[]
 }
 
 // Pivot Table for Many-to-Many relationship between Users and Books
