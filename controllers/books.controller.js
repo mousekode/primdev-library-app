@@ -1,26 +1,25 @@
-import prisma from '../configs/database.config.js' // Import Prisma Client dari file database.js
-import { isCategoryExist } from './categories.controller.js' // Import fungsi isCategoryExist dari categories.controller.js
-import { validationResult } from 'express-validator';
-import { getFileUrl, uploadFile } from './cloudinary.controller.js'
-
-export const isBookExist = async (id) => {
-  // Mencari buku dengan ID yang sesuai di database menggunakan Prisma Client
-  const book = await prisma.books.findUnique({
-    where: {
-      id: id,
-    },
-  })
-
-  return !!book
-}
+import prisma from '../configs/database.config.js'
+import logger from '../configs/logger.config.js'
+import { getFileUrl } from './cloudinary.controller.js'
+import { authenticateToken } from '../middlewares/auth.middleware.js'
+import { validationResult, matchedData } from 'express-validator'
+import {
+  uploadFile,
+  deleteFile,
+} from './cloudinary.controller.js'
 
 export const getBooks = async (req, res) => {
-  // Mengambil semua buku dari database menggunakan Prisma Client
-  const books = await prisma.books.findMany()
+  const { includeCategory } = req.query
 
-  // Tambahkan ini
-  // add coverUrl to each book
-  books.forEach((book) => {
+  const books = await prisma.books.findMany({
+    include: includeCategory === 'true'
+      ? {
+          category: true
+        }
+      : undefined
+  }) 
+
+    books.forEach((book) => {
     if (!book.cloudinaryId) {
       book.coverUrl = null
     } else {
@@ -35,199 +34,296 @@ export const getBooks = async (req, res) => {
   })
 }
 
+
 export const getBookById = async (req, res) => {
-    // Mendapatkan ID buku yang akan diupdate dari parameter URL
-  // Lalu mengubahnya menjadi tipe data integer menggunakan parseInt
-  const id = parseInt(req.params.id)
+  try {
+    const id = parseInt(req.params.id)
+    logger.debug({ booksId: id }, 'getBookById: Started')
 
-  // Mengambil buku dengan ID yang sesuai dari database menggunakan Prisma Client
-  const book = await prisma.books.findUnique({
-    where: {
-      id: id
+    const books = await prisma.books.findUnique({
+      where: {
+        id: id,
+      },
+    })
+
+    if (!books) {
+      logger.warn({ booksId: id }, 'books not found')
+      return res.status(404).json({
+        success: false,
+        message: `books with ID: ${id} not found`,
+      })
     }
-  })
 
-  // Jika buku tidak ditemukan, kirimkan pesan error
-  if (!book) {
-    return res.status(404).json({
+    if (books.cloudinaryId) {
+      books.coverUrl = getFileUrl(books.cloudinaryId)
+    } else {
+      books.coverUrl = null
+    }
+    logger.info({ booksId: id }, 'books retrieved successfully')
+
+    res.status(200).json({
+      success: true,
+      message: 'books retrieved successfully',
+      data: books,
+    })
+  } catch (error) {
+    logger.error({ error: error.message }, 'Failed to retrieve books')
+    res.status(500).json({
       success: false,
-      message: `Book with ID: ${id} not found`,
+      message: 'An error occurred while retrieving books',
+      error: error.message,
     })
   }
-
-  // Tambahkan ini
-  if (book.cloudinaryId) {
-    book.coverUrl = getFileUrl(book.cloudinaryId)
-  } else {
-    book.coverUrl = null
-  }
-
-
-  res.status(200).json({
-    success: true,
-    message: 'Book retrieved successfully',
-    data: book
-  })
 }
 
 export const createBook = async (req, res) => {
-  
-  const validationErrors = validationResult(req)
-  
-  if (!validationErrors.isEmpty()) {
-    return res.status(400).json({
+  try {
+    logger.debug({ body: req.body }, 'createBook: Started')
+
+    const validationErrors = validationResult(req)
+
+    if (!validationErrors.isEmpty()) {
+      logger.warn({ errors: validationErrors.array() }, 'Validation failed')
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: validationErrors.array(),
+      })
+    }
+
+    // Mendapatkan data buku baru dari request body
+    const { categoryId, title, author, year } = req.body
+
+    // Mengecek apakah kategori dengan ID yang diberikan ada di database menggunakan fungsi isCategoryExist
+    logger.debug({ categoryId }, 'Checking if category exists')
+    const categoryExists = await isCategoryExist(categoryId)
+
+    if (!categoryExists) {
+      logger.warn({ categoryId }, 'Category not found')
+      return res.status(404).json({
+        success: false,
+        message: `Category with ID: ${categoryId} not found`,
+      })
+    }
+
+    const cover = req.file
+    let cloudinaryId = null
+
+    if (cover) {
+      logger.debug(
+        { fileName: cover.filename },
+        'Uploading cover to Cloudinary',
+      )
+      const result = await uploadFile(cover)
+      cloudinaryId = result.public_id
+      logger.info({ cloudinaryId }, 'Cover uploaded successfully')
+    }
+
+    logger.debug(
+      { title, author, year, categoryId },
+      'Creating books in database',
+    )
+    const books = await prisma.books.create({
+      data: {
+        categoryId,
+        title,
+        author,
+        year,
+        cloudinaryId,
+      },
+    })
+
+    logger.info({ booksId: books.id, title }, 'books created successfully')
+    res.status(201).json({
+      success: true,
+      message: 'books created successfully',
+      data: books,
+    })
+  } catch (error) {
+    logger.error({ error: error.message }, 'Failed to create books')
+    res.status(500).json({
       success: false,
-      message: 'Validation error',
-      errors: validationErrors.array(),
+      message: 'An error occurred while creating books',
+      error: error.message,
     })
   }
-  
-  // Mendapatkan data buku baru dari request body
-  const { categoryId, title, author, year } = req.body
-	// INI YANG BERUBAH
-  const categoryExists = await isCategoryExist(categoryId)
-
-  if (!categoryExists) {
-    return res.status(404).json({
-      success: false,
-      message: `Category with ID: ${categoryId} not found`,
-    })
-  }
-
-  // Menambahkan buku baru ke database menggunakan Prisma Client
-  const book = await prisma.books.create({
-    data: {
-      categoryId,
-      title,
-      author,
-      year,
-    },
-  })
-
-  res.status(201).json({
-    success: true,
-    message: 'Book created successfully',
-    data: book,
-  })
 }
 
 export const updateBook = async (req, res) => {
-  // Mendapatkan ID buku yang akan diupdate dari parameter URL
-  // Lalu mengubahnya menjadi tipe data integer menggunakan parseInt
-const validationErrors = validationResult(req)
+  try {
+    const id = parseInt(req.params.id)
+    logger.debug({ booksId: id, body: req.body }, 'updatebooks: Started')
 
-if (!validationErrors.isEmpty()) {
-  return res.status(400).json({
-    success: false,
-    message: 'Validation error',
-    errors: validationErrors.array(),
-  })
-}
+    const validationErrors = validationResult(req)
 
-  const id = parseInt(req.params.id)
-
-  // Mendapatkan data buku yang akan diupdate dari request body
-  const { categoryId, title, author, year } = req.body
-
-  // Mencari buku dengan ID yang sesuai di database menggunakan Prisma Client
-  const book = await prisma.books.findUnique({
-    where: {
-      id: id,
-    },
-  })
-
-  // Jika buku tidak ditemukan, kirimkan pesan error
-  if (!book) {
-    return res.json({
-      success: false,
-      message: `Book with ID: ${id} not found`,
-    })
-  }
-
-	// INI YANG BERUBAH
-  const categoryExists = await isCategoryExist(categoryId)
-
-  if (!categoryExists) {
-    return res.status(404).json({
-      success: false,
-      message: `Category with ID: ${categoryId} not found`,
-    })
-  }
-
-  // tambahkan ini
-  const cover = req.file
-  let cloudinaryId = book.cloudinaryId
-
-  // Jika ada file cover yang diunggah, unggah ke Cloudinary dan dapatkan public_id-nya
-  if (cover) {
-    // Jika buku sudah memiliki cover sebelumnya,
-    // hapus file cover lama dari Cloudinary menggunakan public_id yang disimpan di database
-    if (book.cloudinaryId) {
-      const deleted = await deleteFile(book.cloudinaryId)
+    if (!validationErrors.isEmpty()) {
+      logger.warn(
+        { booksId: id, errors: validationErrors.array() },
+        'Validation failed',
+      )
+      return res.status(400).json({
+        success: false,
+        message: 'Validation error',
+        errors: validationErrors.array(),
+      })
     }
 
-    const result = await uploadFile(cover)
-    cloudinaryId = result.public_id
+    const { categoryId, title, author, year } = req.body
+    
+    logger.debug({ booksId: id }, 'Finding books in database')
+    const books = await prisma.books.findUnique({
+      where: {
+        id: id,
+      },
+    })
+
+    if (!books) {
+      logger.warn({ booksId: id }, 'books not found')
+      return res.status(404).json({
+        success: false,
+        message: `books with ID: ${id} not found`,
+      })
+    }
+
+    if (categoryId) {
+      logger.debug({ categoryId }, 'Checking if category exists')
+      const categoryExists = await isCategoryExist(categoryId)
+
+      if (!categoryExists) {
+        logger.warn({ booksId: id, categoryId }, 'Category not found')
+        return res.status(404).json({
+          success: false,
+          message: `Category with ID: ${categoryId} not found`,
+        })
+      }
+    }
+
+    const cover = req.file
+    let cloudinaryId = books.cloudinaryId
+
+    if (cover) {
+      if (books.cloudinaryId) {
+        logger.debug(
+          { booksId: id, oldCloudinaryId: books.cloudinaryId },
+          'Deleting old cover',
+        )
+        await deleteFile(books.cloudinaryId)
+      }
+
+      logger.debug(
+        { booksId: id, fileName: cover.filename },
+        'Uploading new cover to Cloudinary',
+      )
+      const result = await uploadFile(cover)
+      cloudinaryId = result.public_id
+      logger.info({ booksId: id, cloudinaryId }, 'Cover uploaded successfully')
+    }
+
+    logger.debug(
+      { booksId: id, updates: { title, author, year, categoryId } },
+      'Updating books',
+    )
+    await prisma.books.update({
+      where: {
+        id: id,
+      },
+      data: {
+        categoryId,
+        title,
+        author,
+        year,
+        cloudinaryId,
+      },
+    })
+
+    logger.info({ booksId: id, title }, 'books updated successfully')
+    res.status(200).json({
+      success: true,
+      message: 'books updated successfully',
+      data: books,
+    })
+  } catch (error) {
+    logger.error(
+      { booksId: req.params.id, error: error.message },
+      'Failed to update books',
+    )
+    res.status(500).json({
+      success: false,
+      message: 'An error occurred while updating books',
+      error: error.message,
+    })
   }
-
-  // Mengupdate buku dengan ID yang sesuai di database menggunakan Prisma Client
-  await prisma.books.update({
-    where: {
-      id: id,
-    },
-    data: {
-      categoryId,
-      title,
-      author,
-      year,
-      cloudinaryId, // tambahkan ini
-    },
-  })
-
-
-  res.status(200).json({
-    success: true,
-    message: 'Book updated successfully',
-    data: book,
-  })
 }
 
 export const deleteBook = async (req, res) => {
-    // Mendapatkan ID buku yang akan diupdate dari parameter URL
-  // Lalu mengubahnya menjadi tipe data integer menggunakan parseInt
-  const id = parseInt(req.params.id)
+  try {
+    const id = parseInt(req.params.id)
+    logger.debug({ booksId: id }, 'deleteBook: Started')
 
-  // Mencari buku dengan ID yang sesuai di database menggunakan Prisma Client
-  const book = await prisma.books.findUnique({
-    where: {
-      id: id
+    logger.debug({ booksId: id }, 'Finding books in database')
+    const books = await prisma.books.findUnique({
+      where: {
+        id: id,
+      },
+    })
+
+    if (!books) {
+      logger.warn({ booksId: id }, 'books not found')
+      return res.status(404).json({
+        success: false,
+        message: `books with ID: ${id} not found`,
+      })
     }
-  })
 
-  // Jika buku tidak ditemukan, kirimkan pesan error
-  if (!book) {
-    return res.status(404).json({
+    if (books.cloudinaryId) {
+      logger.debug(
+        { booksId: id, cloudinaryId: books.cloudinaryId },
+        'Deleting cover from Cloudinary',
+      )
+      await deleteFile(books.cloudinaryId)
+    }
+
+    logger.debug({ booksId: id }, 'Deleting books from database')
+    await prisma.books.delete({
+      where: {
+        id: id,
+      },
+    })
+
+    logger.info({ booksId: id }, 'books deleted successfully')
+    res.status(200).json({
+      success: true,
+      message: 'books deleted successfully',
+    })
+  } catch (error) {
+    logger.error(
+      { booksId: req.params.id, error: error.message },
+      'Failed to delete books',
+    )
+    res.status(500).json({
       success: false,
-      message: `Book with ID: ${id} not found`,
+      message: 'An error occurred while deleting books',
+      error: error.message,
     })
   }
+}
 
-	// tambahkan ini
-  // Jika buku memiliki cover yang diunggah ke Cloudinary, 
-  // hapus file cover tersebut dari Cloudinary menggunakan public_id yang disimpan di database
-  if (book.cloudinaryId) {
-    const deleted = await deleteFile(book.cloudinaryId)
-  }
-  
-  // Menghapus buku dengan ID yang sesuai di database menggunakan Prisma Client
-  await prisma.books.delete({
+export const isbooksExist = async (id) => {
+  const books = await prisma.books.findUnique({
     where: {
-      id: id
-    }
+      id: id,
+    },
   })
-  
-  res.status(200).json({
-    success: true,
-    message: "Book deleted successfully"
+
+  return !!books
+}
+
+export const isCategoryExist = async (id) => {
+  const category = await prisma.categories.findUnique({
+    where: {
+      id: parseInt(id),
+    },
   })
+
+  return !!category
 }

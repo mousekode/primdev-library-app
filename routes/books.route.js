@@ -1,17 +1,20 @@
 import express from 'express'
-// import prisma from './configs/database.js' dihapus karena sudah diimport di masing-masing controller
+
 import {
-  createBook,
-  getBookById,
   getBooks,
-  updateBook,
+  getBookById,
+  createBook,
   deleteBook,
-} from '../controllers/books.controller.js' // Import controller untuk buku
+  updateBook,
+} from '../controllers/books.controller.js'
+
+import { authorizeAdmin } from '../middlewares/admin.middleware.js'
+import { authenticateToken } from '../middlewares/auth.middleware.js'
 
 import {
   bookValidation,
   updateBookValidation,
-} from '../validations/books.validation.js' // Import validasi untuk buku
+} from '../validations/books.validation.js'
 
 import multer from 'multer'
 
@@ -20,12 +23,32 @@ const upload = multer({ storage })
 
 const router = express.Router()
 
-import { authorizeAdmin } from '../middlewares/auth.middleware.js' // Import middleware untuk otorisasi admin
-
 router.get('/', getBooks)
 router.get('/:id', getBookById)
-router.post('/', authorizeAdmin, upload.single('cover'), bookValidation, createBook)
-router.put('/:id', authorizeAdmin, upload.single('cover'), updateBookValidation, updateBook)
-router.delete('/:id', authorizeAdmin, deleteBook)
+
+router.post(
+  '/',
+  authenticateToken,
+  authorizeAdmin,
+  upload.single('cover'),
+  bookValidation,
+  createBook
+)
+
+router.put(
+  '/:id',
+  authenticateToken,
+  authorizeAdmin,
+  upload.single('cover'),
+  updateBookValidation,
+  updateBook
+)
+
+router.delete(
+  '/:id',
+  authenticateToken,
+  authorizeAdmin,
+  deleteBook
+)
 
 export default router

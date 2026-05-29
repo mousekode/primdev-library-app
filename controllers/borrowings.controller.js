@@ -1,6 +1,4 @@
-import prisma from '../configs/database.config.js' // Import Prisma Client dari file database.js
-import { isUserExist } from './users.controller.js' // Import fungsi isUserExist dari users.controller.js
-import { isBookExist } from './books.controller.js' // Import fungsi isBookExist dari books.controller.js
+import prisma from '../configs/database.config.js'
 
 export const getAllBorrowings = async (req, res) => {
   // Mengambil semua peminjaman dari database menggunakan Prisma Client
@@ -82,7 +80,7 @@ export const createBorrowing = async (req, res) => {
   })
 
   // Update ketersediaan buku menjadi false setelah dipinjam
-  await prisma.books.update({
+  await prisma.book.update({
     where: { id: parseInt(bookId) },
     data: { available: false },
   })
@@ -94,43 +92,26 @@ export const createBorrowing = async (req, res) => {
   })
 }
 
-export const deleteBorrowing = async (req, res) => {
-  // Mendapatkan ID peminjaman yang akan dihapus dari parameter URL
-  const id = parseInt(req.params.id)
-
-  // Mencari peminjaman dengan ID yang sesuai di database menggunakan Prisma Client
-  const borrowing = await prisma.borrowings.findUnique({
-    where: { id: parseInt(id) },
-    include: {
-      borrower: { select: { id: true, name: true, email: true } },
-      book: true,
+export const isUserExist = async (id) => {
+  // Mencari pengguna dengan ID yang sesuai di database menggunakan Prisma Client
+  const user = await prisma.users.findUnique({
+    where: {
+      id: id,
     },
   })
 
-  // Jika peminjaman tidak ditemukan, kirimkan pesan error
-  if (!borrowing) {
-    return res.json({
-      success: false,
-      message: 'Borrowing not found',
-    })
-  }
+  return !!user
+}
 
-  // Hapus peminjaman dengan ID yang sesuai di database menggunakan Prisma Client
-  await prisma.borrowings.delete({ where: { id: parseInt(id) } })
-
-  // Update ketersediaan buku menjadi true jika buku belum dikembalikan
-  if (!borrowing.returned_at) {
-    await prisma.books.update({
-      where: { id: borrowing.bookId },
-      data: { available: true },
-    })
-  }
-
-  res.json({
-    success: true,
-    message: 'Borrowing deleted successfully',
-    data: borrowing,
+export const isBookExist = async (id) => {
+  // Mencari buku dengan ID yang sesuai di database menggunakan Prisma Client
+  const book = await prisma.book.findUnique({
+    where: {
+      id: id,
+    },
   })
+
+  return !!book
 }
 
 export const returnBook = async (req, res) => {
@@ -169,7 +150,7 @@ export const returnBook = async (req, res) => {
   })
 
   // Update ketersediaan buku menjadi true setelah dikembalikan
-  await prisma.books.update({
+  await prisma.book.update({
     where: { id: returnedBorrowing.bookId },
     data: { available: true },
   })
@@ -178,5 +159,44 @@ export const returnBook = async (req, res) => {
     success: true,
     message: 'Book returned successfully',
     data: returnedBorrowing,
+  })
+}
+
+export const deleteBorrowing = async (req, res) => {
+  // Mendapatkan ID peminjaman yang akan dihapus dari parameter URL
+  const id = parseInt(req.params.id)
+
+  // Mencari peminjaman dengan ID yang sesuai di database menggunakan Prisma Client
+  const borrowing = await prisma.borrowings.findUnique({
+    where: { id: parseInt(id) },
+    include: {
+      borrower: { select: { id: true, name: true, email: true } },
+      book: true,
+    },
+  })
+
+  // Jika peminjaman tidak ditemukan, kirimkan pesan error
+  if (!borrowing) {
+    return res.json({
+      success: false,
+      message: 'Borrowing not found',
+    })
+  }
+
+  // Hapus peminjaman dengan ID yang sesuai di database menggunakan Prisma Client
+  await prisma.borrowings.delete({ where: { id: parseInt(id) } })
+
+  // Update ketersediaan buku menjadi true jika buku belum dikembalikan
+  if (!borrowing.returned_at) {
+    await prisma.book.update({
+      where: { id: borrowing.bookId },
+      data: { available: true },
+    })
+  }
+
+  res.json({
+    success: true,
+    message: 'Borrowing deleted successfully',
+    data: borrowing,
   })
 }
