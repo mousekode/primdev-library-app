@@ -10,7 +10,8 @@
     "multer": "^2.1.1",
     "pg": "^8.21.0",
     "pino": "^10.3.1",
-    "pino-http": "^11.0.0"
+    "pino-http": "^11.0.0",
+    "vercel": "^50.41.0"
   },
   "name": "primdev-ic-be",
   "version": "1.0.0",
@@ -19,7 +20,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "prisma generate",
+    "postinstall": "prisma generate",
+    "vercel-build": "prisma generate"
   },
   "author": "Akbar Aditya",
   "license": "ISC",
